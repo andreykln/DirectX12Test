@@ -15,6 +15,80 @@ D3DApp* D3DApp::GetApp()
 	return mApp;
 }
 
+int D3DApp::Run()
+{
+	MSG msg = { 0 };
+
+	mTimer.Reset();
+
+	while (msg.message != WM_QUIT)
+	{
+		if (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+		{
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+		else
+		{
+			mTimer.Tick();
+
+			if (!mAppPaused)
+			{
+				CalculateFrameStats();
+			//	Update(mTimer);
+			//	Draw(mTimer);
+			}
+			else
+			{
+				Sleep(100);
+			}
+		}
+	}
+
+	return (int)msg.wParam;
+}
+
+void D3DApp::OnResize()
+{
+}
+
+void D3DApp::CalculateFrameStats()
+{
+	static int frameCnt = 0;
+	static float timeElapsed = 0.0f;
+
+	frameCnt++;
+
+	// Compute averages over one second period.
+	if ((mTimer.TotalTime() - timeElapsed) >= 1.0f)
+	{
+		float fps = (float)frameCnt; // fps = frameCnt / 1
+		float mspf = 1000.0f / fps;
+
+		std::wstring fpsStr = std::to_wstring(fps);
+		std::wstring mspfStr = std::to_wstring(mspf);
+		std::wstring tTime = std::to_wstring(static_cast<int>(mTimer.TotalTime()));
+
+		std::wstring windowText = mMainWndCaption +
+			L"    fps: " + fpsStr +
+			L"   mspf: " + mspfStr + 
+			L"   Total time: " + tTime;
+
+		SetWindowText(mhMainWnd, windowText.c_str());
+
+		// Reset for next average.
+		frameCnt = 0;
+		timeElapsed += 1.0f;
+	}
+}
+
+D3DApp::D3DApp(HINSTANCE hInstance)
+	: mhAppInst(hInstance)
+{
+	assert(mApp == nullptr);
+	mApp = this;
+}
+
 bool D3DApp::InitMainWindow()
 {
 	WNDCLASS wc;
@@ -65,55 +139,55 @@ LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 	case WM_ACTIVATE:
 		if (LOWORD(wParam) == WA_INACTIVE)
 		{
-			//mAppPaused = true;
-			//mTimer.Stop();
+			mAppPaused = true;
+			mTimer.Stop();
 		}
 		else
 		{
-			//mAppPaused = false;
-			//mTimer.Start();
+			mAppPaused = false;
+			mTimer.Start();
 		}
 		return 0;
 
 		// WM_SIZE is sent when the user resizes the window.  
 	case WM_SIZE:
 		// Save the new client area dimensions.
-		//mClientWidth = LOWORD(lParam);
-		//mClientHeight = HIWORD(lParam);
+		mClientWidth = LOWORD(lParam);
+		mClientHeight = HIWORD(lParam);
 	//	if (md3dDevice)
 		{
 			if (wParam == SIZE_MINIMIZED)
 			{
-				//mAppPaused = true;
-				//mMinimized = true;
-				//mMaximized = false;
+				mAppPaused = true;
+				mMinimized = true;
+				mMaximized = false;
 			}
 			else if (wParam == SIZE_MAXIMIZED)
 			{
-				//mAppPaused = false;
-				//mMinimized = false;
-				//mMaximized = true;
-				//OnResize();
+				mAppPaused = false;
+				mMinimized = false;
+				mMaximized = true;
+				OnResize();
 			}
 			else if (wParam == SIZE_RESTORED)
 			{
 
 				// Restoring from minimized state?
-				//if (mMinimized)
+				if (mMinimized)
 				{
-					//mAppPaused = false;
-					//mMinimized = false;
-					//OnResize();
+					mAppPaused = false;
+					mMinimized = false;
+					OnResize();
 				}
 
 				// Restoring from maximized state?
-				//else if (mMaximized)
+				else if (mMaximized)
 				{
-					//mAppPaused = false;
-					//mMaximized = false;
-					//OnResize();
+					mAppPaused = false;
+					mMaximized = false;
+					OnResize();
 				}
-				//else if (mResizing)
+				else if (mResizing)
 				{
 					// If user is dragging the resize bars, we do not resize 
 					// the buffers here because as the user continuously 
@@ -124,9 +198,9 @@ LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 					// done resizing the window and releases the resize bars, which 
 					// sends a WM_EXITSIZEMOVE message.
 				}
-				//else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
+				else // API call such as SetWindowPos or mSwapChain->SetFullscreenState.
 				{
-					//OnResize();
+					OnResize();
 				}
 			}
 		}
@@ -134,18 +208,18 @@ LRESULT D3DApp::MsgProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 
 		// WM_EXITSIZEMOVE is sent when the user grabs the resize bars.
 	case WM_ENTERSIZEMOVE:
-	//	mAppPaused = true;
-		//mResizing = true;
-		//mTimer.Stop();
+		mAppPaused = true;
+		mResizing = true;
+		mTimer.Stop();
 		return 0;
 
 		// WM_EXITSIZEMOVE is sent when the user releases the resize bars.
 		// Here we reset everything based on the new window dimensions.
 	case WM_EXITSIZEMOVE:
-		//mAppPaused = false;
-		//mResizing = false;
-		//mTimer.Start();
-		//OnResize();
+		mAppPaused = false;
+		mResizing = false;
+		mTimer.Start();
+		OnResize();
 		return 0;
 
 		// WM_DESTROY is sent when the window is being destroyed.

@@ -6,4 +6,5 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 {
 	D3DApp pApp(hInstance);
 	pApp.InitMainWindow();
+	pApp.Run();
 }
