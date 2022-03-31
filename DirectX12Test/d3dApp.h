@@ -5,6 +5,19 @@
 //#pragma comment(lib,"d3dcompiler.lib")
 //#pragma comment(lib, "D3D12.lib")
 //#pragma comment(lib, "dxgi.lib")
+
+
+struct VertexPosCol
+{
+	DirectX::XMFLOAT3 pos;
+	DirectX::XMFLOAT4 color;
+};
+
+struct ObjectConstants
+{
+	DirectX::XMFLOAT4X4 worldViewProjection = Identity4x4();
+};
+
 class D3DApp
 {
 public:
@@ -22,8 +35,31 @@ private:
 	void CreateSwapChain();
 	void CreateRtvAndDsvDescriptorHeaps();
 	void Draw(Timer& timer);
+	void Update(Timer& timer);
 	void FlushCommandQueue();
+	void BuildProjection();
 	
+	/// <Box>
+	std::unique_ptr<UploadBuffer<ObjectConstants>> mObjectCB = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
+	Microsoft::WRL::ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> mvsByteCode = nullptr;
+	Microsoft::WRL::ComPtr<ID3DBlob> mpsByteCode = nullptr;
+	std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
+	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
+	Microsoft::WRL::ComPtr<ID3D12PipelineState> mPSO = nullptr;
+	void BuildRootSignature();
+	void BuildBoxDescriptorHeaps();
+	void BuildConstantBuffers();
+	void BuildShadersAndInputLayout();
+	void BuildBoxGeometry();
+	void BuildPSO();
+	DirectX::XMFLOAT4X4 mWorld = Identity4x4();
+	DirectX::XMFLOAT4X4 mView = Identity4x4();
+	DirectX::XMFLOAT4X4 mProj = Identity4x4();
+
+	/// </Box>
+
 	void OnResize();
 	void CalculateFrameStats();
 
